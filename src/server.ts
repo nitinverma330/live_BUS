@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import busRoutes from './routes/busRoutes';
 import locationRoutes from './routes/locationRoutes';
+import authRoutes from './routes/authRoutes'; // Add this import
 
 dotenv.config();
 
@@ -23,8 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api', busRoutes);
 app.use('/api', locationRoutes);
+app.use('/api/auth', authRoutes); // Add auth routes
 
-// Health check route - IMPORTANT for Render
+// Health check route
 app.get('/', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -53,9 +55,13 @@ mongoose.connect(process.env.MONGODB_URI!)
         const collection = db.collection('stops');
         await collection.createIndex({ locationArea: '2dsphere' });
         console.log('✅ 2dsphere index created on stops collection');
+        
+        // Create email index for users
+        await db.collection('users').createIndex({ email: 1 }, { unique: true });
+        console.log('✅ Email index created on users collection');
       }
     } catch (error) {
-      console.error('Error creating index:', error);
+      console.error('Error creating indexes:', error);
     }
 
     // Start server - LISTEN ON ALL INTERFACES
@@ -63,6 +69,7 @@ mongoose.connect(process.env.MONGODB_URI!)
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📡 API available at http://localhost:${PORT}/api`);
+      console.log(`🔐 Auth API available at http://localhost:${PORT}/api/auth`);
     });
   })
   .catch((error) => {
